@@ -1,0 +1,61 @@
+import subprocess
+import os.path
+import sys
+import threading
+import argparse
+import time
+
+LOG_SETS = {
+	'nova'    : ('/var/log/nova/nova-api.log',
+	             '/var/log/nova/nova-network.log',
+	             '/var/log/nova/nova-compute.log',
+			     '/var/log/nova/nova-scheduler.log',
+			     '/var/log/nova/nova-objectstore.log',
+			     '/var/log/nova/nova-volume.log',
+			     '/var/log/nova/nova-vsa.log',
+			     '/var/log/nova/nova-manage.log'),
+	'vc-sys'   :('/var/log/syslog', '/var/log/messages'),
+	'vac'      :('/var/log/zadara/zadara-vac.log',),
+	'vam'      :('/var/log/zadara/zadara-vam.log',)
+}	
+
+def run_plink_with_tail_logs(plink_path, ip, username, password, remote_log_file, local_logs_dir, pull_existing_log):
+    args = [plink_path, '-ssh', '-pw', password, username + '@' + ip,
+	        'cat remote_log_file ;' if  pull_existing_log else '' +
+	        'tail -F ' + remote_log_file]
+    
+    local_log_file = os.path.join(local_logs_dir, ip + '.' + os.path.basename(remote_log_file))
+    local_log_file_obj = open(local_log_file, 'a') # TODO ask the user whether to truncate or append
+    
+    while True:
+    		subpr_obj = subprocess.Popen(args, stdin=subprocess.PIPE, stdout=local_log_file_obj, stderr=local_log_file_obj)
+    		subpr_obj.communicate(b'y') # The input argument must be a byte string
+    		print('plink pulling from [{0}] terminated, restarting'.format(remote_log_file))
+    
+def main():
+	parser = argparse.ArgumentParser(description='Connects to a Linux machine, do "tail -F " on selected set of logs and save the logs in local files')
+	parser.add_argument('ip', help='The IP address of the machine to connect to')
+	parser.add_argument('-u', '--user', default='root', help='The username to use when connecting')
+	parser.add_argument('-p', '--password', default='root', help='The password to use when connecting')
+	log_choices = tuple(LOG_SETS.keys())
+	parser.add_argument('-l', '--logs', choices=log_choices, default=log_choices[0], help='The set of log files to monitor')
+	parser.add_argument('--plink_path', default='C:\Programs\plink\plink.exe', help='The path to the plink program')
+	parser.add_argument('--local_logs_dir', default='C:\Work\Logs', help='The local directory to store the log files')
+	opts = parser.parse_args()
+	
+	remote_log_files = LOG_SETS[opts.logs]
+	threads = []
+	for remote_log_file in remote_log_files:
+		thr = threading.Thread(name='Thread for [{0}] on [{1}]'.format(remote_log_file, opts.ip),
+		                       target=run_plink_with_tail_logs, 
+		                       args=(opts.plink_path, opts.ip, opts.user, opts.password, remote_log_file, opts.local_logs_dir, False))
+		threads.append(thr)
+		thr.start()
+	
+	try:
+		while True:
+			time.sleep(1)
+	except KeyboardInterrupt:
+		os.abort()
+
+main()
