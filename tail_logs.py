@@ -16,7 +16,8 @@ LOG_SETS = {
 			     '/var/log/nova/nova-manage.log'),
 	'vc-sys'   :('/var/log/syslog', '/var/log/messages'),
 	'vac'      :('/var/log/zadara/zadara_vac.log',),
-	'vam'      :('/var/log/zadara/zadara_vam.log',)
+	'vam'      :('/var/log/zadara/zadara_vam.log',),
+	'vc'       :('/var/log/zadara/zadara_vac.log', '/var/log/zadara/zadara_vam.log')
 }	
 
 def run_plink_with_tail_logs(plink_path, ip, username, password, remote_log_file, local_logs_dir, pull_existing_log):
