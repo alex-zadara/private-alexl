@@ -21,10 +21,6 @@ create_changeset_file()
 	# Get the changes from git
 	cd $GIT_REPO_PATH
 	local changed_files=`git status | egrep 'modified:|new file:' | cut -d ':' -f 2`
-	if [ ! "$changed_files" ]
-	then
-		return 0
-	fi
 	
 	# Fill the changeset file
 	for filename in $changed_files

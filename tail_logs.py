@@ -17,7 +17,7 @@ LOG_SETS = {
     'vc-sys'   :('/var/log/syslog', '/var/log/messages'),
     'vac'      :('/var/log/zadara/zadara_vac.log',),
     'vam'      :('/var/log/zadara/zadara_vam.log',),
-    'vc'       :('/var/log/zadara/zadara_vac.log', '/var/log/zadara/zadara_vam.log'),
+    'vc'       :('/var/log/zadara/zadara_vac.log', '/var/log/zadara/zadara_vam.log', '/var/log/zadara/zadara_cfg.py.log'),
     'sn'       :('/var/log/zadara/zadara_snmonitor.log', '/var/log/zadara/zadara_sncfg.log')
 }	
 
