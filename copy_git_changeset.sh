@@ -51,14 +51,21 @@ copy_changed_files()
 		if [ -f $DEST_DIR/$filename ]
 		then
 			echo "[$DEST_DIR/$filename] already exists"
+			continue
+		fi
+		
+		if [ ! -f $WORKING_TREE_PATH/$filename ]
+		then
+			echo "[$WORKING_TREE_PATH/$filename] not found, skipping"
+			continue
+		fi
+
+		echo "Copying [$WORKING_TREE_PATH/$filename] to [$DEST_DIR/$filename]..."
+		if cp $WORKING_TREE_PATH/$filename $DEST_DIR/$file_rel_path
+		then
+			num_copied=`expr $num_copied + 1`
 		else
-			echo "Copying [$WORKING_TREE_PATH/$filename] to [$DEST_DIR/$filename]..."
-			if cp $WORKING_TREE_PATH/$filename $DEST_DIR/$file_rel_path
-			then
-				num_copied=`expr $num_copied + 1`
-			else
-				exit 1
-			fi
+			exit 1
 		fi
 	done
 	

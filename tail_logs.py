@@ -43,14 +43,18 @@ def main():
     parser.add_argument('-u', '--user', default='root', help='The username to use when connecting')
     parser.add_argument('-p', '--password', default='root', help='The password to use when connecting')
     log_choices = tuple(LOG_SETS.keys())
-    parser.add_argument('-l', '--logs', choices=log_choices, default=log_choices[0], help='The set of log files to monitor')
+    parser.add_argument('-l', '--logs', action='append', choices=log_choices, help='The set of log files to monitor')
     parser.add_argument('--plink_path', default='C:\Programs\plink\plink.exe', help='The path to the plink program')
     parser.add_argument('--local_logs_dir', default='C:\Work\Logs', help='The local directory to store the log files')
     parser.add_argument('-e', '--pull_existing_logs', action='store_true', default=False, help='Whether to pull existing content from the log file, before "tail -F"');
     opts = parser.parse_args()
 
     threads = []
-    remote_log_files = LOG_SETS[opts.logs]
+    
+    remote_log_files = []
+    for log_set_name in opts.logs:
+    	remote_log_files.extend(LOG_SETS[log_set_name])
+	
     for ip_address in opts.ip:
         for remote_log_file in remote_log_files:
             print('Starting thread for [{0}] on [{1}]'.format(remote_log_file, ip_address))
