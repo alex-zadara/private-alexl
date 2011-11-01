@@ -14,7 +14,7 @@ LOG_SETS = {
     		     '/var/log/nova/nova-volume.log',
     		     '/var/log/nova/nova-vsa.log',
     		     '/var/log/nova/nova-manage.log'),
-    'sys'      :('/var/log/syslog', '/var/log/messages'),
+    'sys'      :('/var/log/syslog', '/var/log/kern.log'),
     'vac'      :('/var/log/zadara/zadara_vac.log',),
     'vam'      :('/var/log/zadara/zadara_vam.log',),
     'vc'       :('/var/log/zadara/zadara_vac.log', '/var/log/zadara/zadara_vam.log', '/var/log/zadara/zadara_cfg.py.log'),
