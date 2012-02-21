@@ -14,7 +14,7 @@ LOG_SETS = {
     		     '/var/log/nova/nova-volume.log',
     		     '/var/log/nova/nova-vsa.log',
     		     '/var/log/nova/nova-manage.log'),
-    'sys'      :('/var/log/syslog', '/var/log/kern.log'),
+    'sys'      :('/var/log/syslog', '/var/log/kern.log', '/var/log/auth.log'),
     'vac'      :('/var/log/zadara/zadara_vac.log',),
     'vam'      :('/var/log/zadara/zadara_vam.log',),
     'vc'       :('/var/log/zadara/zadara_vac.log', '/var/log/zadara/zadara_vam.log', '/var/log/zadara/zadara_cfg.py.log'),
@@ -43,12 +43,12 @@ def main():
     parser.add_argument('-u', '--user', default='root', help='The username to use when connecting')
     parser.add_argument('-p', '--password', default='root', help='The password to use when connecting')
     log_choices = tuple(LOG_SETS.keys())
-    parser.add_argument('-l', '--logs', action='append', choices=log_choices, help='The set of log files to monitor')
+    parser.add_argument('-l', '--logs', action='append', choices=log_choices, required=True, help='The set of log files to monitor')
     parser.add_argument('--plink_path', default='C:\Programs\plink\plink.exe', help='The path to the plink program')
     parser.add_argument('--local_logs_dir', default='C:\Work\Logs', help='The local directory to store the log files')
     parser.add_argument('-e', '--pull_existing_logs', action='store_true', default=False, help='Whether to pull existing content from the log file, before "tail -F"');
     opts = parser.parse_args()
-
+    
     threads = []
     
     remote_log_files = []
