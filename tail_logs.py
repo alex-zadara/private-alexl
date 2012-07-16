@@ -18,6 +18,7 @@ LOG_SETS = {
     'vac'      :('/var/log/zadara/zadara_vac.log',),
     'vam'      :('/var/log/zadara/zadara_vam.log',),
     'vc'       :('/var/log/zadara/zadara_vac.log', '/var/log/zadara/zadara_vam.log', '/var/log/zadara/zadara_cfg.py.log'),
+    'vccfg'    :('/var/log/zadara/zadara_vccfg.log',),
     'sn'       :('/var/log/zadara/zadara_snmonitor.log', '/var/log/zadara/zadara_sncfg.log')
 }	
 
