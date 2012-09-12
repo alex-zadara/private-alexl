@@ -2,13 +2,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <time.h>
 
 void print_device_props(struct udev_device *dev)
 {
 	struct udev_list_entry * entry = NULL;
 	time_t now = time(NULL);
 	char time_str[128] = {'\0'}; // Should be at least 26 bytes according to manpage
-	unsigned int idx = 0;
 
 	ctime_r(&now, time_str);
 	printf("============= %s", time_str); // time_str already includes \n
