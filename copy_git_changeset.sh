@@ -3,7 +3,7 @@
 print_usage()
 {
 	echo "Usage:"
-	echo "$0 [-w working_tree_path] [-f change_set_file - to use instead of git status] [-g git_repo_path] dest_dir"
+	echo "$0 [-w working_tree_path] [-f change_set_file - to use instead of git status] dest_dir"
 }
 
 create_changeset_file()
@@ -19,7 +19,6 @@ create_changeset_file()
 	touch $change_set_filename
 	
 	# Get the changes from git
-	cd $GIT_REPO_PATH
 	local changed_files=`git status | egrep 'modified:|new file:' | cut -d ':' -f 2`
 	
 	# Fill the changeset file
@@ -76,16 +75,13 @@ copy_changed_files()
 
 # Global variables
 WORKING_TREE_PATH=.
-GIT_REPO_PATH=.
 USER_CHANGESET_FILENAME=
 DEST_DIR=
 
-while getopts 'w:g:f:' OPTNAME
+while getopts 'w:f:' OPTNAME
 do
 case $OPTNAME in
 	w)  WORKING_TREE_PATH="$OPTARG"
-		;;
-	g)  GIT_REPO_PATH="$OPTARG"
 		;;
 	f) USER_CHANGESET_FILENAME="$OPTARG"
 		;;  
@@ -97,7 +93,7 @@ shift $((OPTIND-1))
 
 # Check parameters
 DEST_DIR=$1
-if [ ! "$DEST_DIR" ] || [ ! "$WORKING_TREE_PATH" ] || [ ! "$GIT_REPO_PATH" ]
+if [ ! "$DEST_DIR" ] || [ ! "$WORKING_TREE_PATH" ]
 then
 	print_usage
 	exit 1
@@ -106,6 +102,10 @@ fi
 
 # Create the destination directory
 mkdir -p $DEST_DIR
+
+# Information about which branch we are in and what is the top commit
+git branch -v -v -a > $DEST_DIR/existing.branches__
+git log -1 > $DEST_DIR/top.commit__
 
 if [ "$USER_CHANGESET_FILENAME" ]
 then
