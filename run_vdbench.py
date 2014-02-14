@@ -17,7 +17,7 @@ def gen_out_dir(opts):
     return os.path.join(opts.out_root_dir, 
         '{0}__O{1}_r{2}_s{3}_x{4}_e{5}'.format(time.strftime("%Y-%m-%d__%H-%M-%S"),
             opts.outstanding, opts.readpct, opts.seekpct, opts.xfersize,
-            opts.elaped))
+            opts.elapsed))
 
 def prepare_vdbench_input_file(fname, opts):
     with open(fname, 'w') as f:
