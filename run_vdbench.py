@@ -21,14 +21,17 @@ def gen_out_dir(opts):
 
 def prepare_vdbench_input_file(fname, opts):
     with open(fname, 'w') as f:
-        f.write('sd=sd1,lun={0},threads={1},openflags=o_direct\n'.format(opts.blkdev, opts.outstanding))
-        f.write('wd=wd1,sd=(sd1),rdpct={0},seekpct={1},xfersize={2}k\n'.format(opts.readpct, opts.seekpct, opts.xfersize))
+        sd_idx = 0
+        for blkdev in opts.blkdevs:
+            f.write('sd=sd{0},lun={1},threads={2},openflags=o_direct\n'.format(sd_idx, blkdev, opts.outstanding))
+            sd_idx = sd_idx + 1
+        f.write('wd=wd1,sd=(sd*),rdpct={0},seekpct={1},xfersize={2}k\n'.format(opts.readpct, opts.seekpct, opts.xfersize))
         f.write('rd=run_vdbench,wd=(wd1),iorate=max,elapsed={0},interval=1\n'.format(opts.elapsed))
         f.flush()
 
 def main():
     parser = argparse.ArgumentParser(description='Run basic vdbench test on a block device')
-    parser.add_argument('blkdev', help='block device to run the test on')
+    parser.add_argument('blkdevs', nargs='+', help='block devices to run the test on')
     parser.add_argument('-O', '--outstanding', type=int, default=32, help='number of outstanding IOs')
     parser.add_argument('-r', '--readpct', type=int, default=0, help='read percentage')
     parser.add_argument('-s', '--seekpct', type=int, default=100, help='seek percentage (random vs sequential)')
