@@ -3,14 +3,17 @@
 print_usage()
 {
 	echo "Usage:"
-	echo "$0 [-w working_tree_path] [-f change_set_file - to use instead of git status] dest_dir"
+	echo "$0 [-s] [-w working_tree_path] [-f change_set_file] dest_dir"
+	echo "    -s:    copy only staged files (has no effect when -f is used)"
+	echo "    -f:    use the specified changeset file, instead of asking git which files changed"
 }
 
 create_changeset_file()
 {
 	local dest_dir=$1
+	local staged_only=$2
 	local change_set_filename=$dest_dir/`basename $dest_dir`.changeset
-	
+
 	# Create or refresh the changeset file
 	if [ -f $change_set_filename ]
 	then
@@ -19,8 +22,14 @@ create_changeset_file()
 	touch $change_set_filename
 	
 	# Get the changes from git
-	local changed_files=`git status | egrep 'modified:|new file:' | cut -d ':' -f 2`
-	
+	local changed_files=
+	if [ "$staged_only" = "0" ]; then
+		changed_files=`git status | egrep 'modified:|new file:' | cut -d ':' -f 2`
+	else
+		# Note that the below command has TAB as delimiter; this is also the default delimiter of "cut"
+		changed_files=`git diff --cached --name-status  | cut  -f2`
+	fi
+
 	# Fill the changeset file
 	for filename in $changed_files
 	do
@@ -74,13 +83,16 @@ copy_changed_files()
 #################################### main ###############################################
 
 # Global variables
+ONLY_STAGED_FILES=0
 WORKING_TREE_PATH=.
 USER_CHANGESET_FILENAME=
 DEST_DIR=
 
-while getopts 'w:f:' OPTNAME
+while getopts 'sw:f:' OPTNAME
 do
 case $OPTNAME in
+	s)  ONLY_STAGED_FILES=1
+		;;
 	w)  WORKING_TREE_PATH="$OPTARG"
 		;;
 	f) USER_CHANGESET_FILENAME="$OPTARG"
@@ -113,6 +125,9 @@ then
 	copy_changed_files $USER_CHANGESET_FILENAME
 else
 	echo "Generating changeset file..."
-	changeset_filename=`create_changeset_file $DEST_DIR`
+	if [ "$ONLY_STAGED_FILES" -ne "0" ]; then
+		echo "(only files staged for commit)"
+	fi
+	changeset_filename=`create_changeset_file $DEST_DIR $ONLY_STAGED_FILES`
 	copy_changed_files $changeset_filename
 fi 
