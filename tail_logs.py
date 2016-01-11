@@ -24,13 +24,13 @@ LOG_SETS = {
     'sn'       :('/var/log/zadara/zadara_snmonitor.log', '/var/log/zadara/zadara_sncfg.log')
 }	
 
-def run_plink_with_tail_logs(plink_path, ip, username, password, remote_log_file, local_logs_dir, pull_existing_log):
+def run_plink_with_tail_logs(plink_path, ip, port, username, password, remote_log_file, local_logs_dir, pull_existing_log):
     # Build the command to run
     cmd = '';
     if pull_existing_log:
         cmd = 'echo ------ Existing log: `date`; cat ' + remote_log_file + '; '
     cmd = cmd + 'date; echo ------ Tailing: `date`; tail -F ' + remote_log_file; 
-    args = [plink_path, '-ssh', '-pw', password, username + '@' + ip, cmd]
+    args = [plink_path, '-P', str(port), '-ssh', '-pw', password, username + '@' + ip, cmd]
 
     local_log_file = os.path.join(local_logs_dir, ip + '.' + os.path.basename(remote_log_file))
     local_log_file_obj = open(local_log_file, 'a') # TODO ask the user whether to truncate or append
@@ -43,15 +43,16 @@ def run_plink_with_tail_logs(plink_path, ip, username, password, remote_log_file
 def main():
     parser = argparse.ArgumentParser(description='Connects to a Linux machine, performs "tail -F " on selected set of logs and save the logs in local files')
     parser.add_argument('ip', nargs='+', help='The IP address(es) of machine(s) to connect to')
-    parser.add_argument('-u', '--user', default='root', help='The username to use when connecting')
-    parser.add_argument('-p', '--password', default='root', help='The password to use when connecting')
+    parser.add_argument('-P', '--port', default=22, type=int, help='The port to use when connecting, default is 22')
+    parser.add_argument('-u', '--user', default='root', help='The username to use when connecting, default is "root"')
+    parser.add_argument('-p', '--password', default='root', help='The password to use when connecting, default is "root"')
     log_choices = tuple(LOG_SETS.keys())
     parser.add_argument('-l', '--logs', action='append', choices=log_choices, required=True, help='The set of log files to monitor')
-    parser.add_argument('--plink_path', default='C:\Programs\plink\plink.exe', help='The path to the plink program')
-    parser.add_argument('--local_logs_dir', default='C:\Work\Logs', help='The local directory to store the log files')
-    parser.add_argument('-e', '--pull_existing_logs', action='store_true', default=False, help='Whether to pull existing content from the log file, before "tail -F"');
+    parser.add_argument('--plink_path', default='C:\Programs\plink\plink.exe', help='The path to the plink program, default is "C:\Programs\plink\plink.exe"')
+    parser.add_argument('--local_logs_dir', default='C:\Work\Logs', help='The local directory to store the log files, default is "C:\Work\Logs"')
+    parser.add_argument('-e', '--pull_existing_logs', action='store_true', default=False, help='Whether to pull existing content from the log file, before "tail -F", default is False');
     opts = parser.parse_args()
-    
+
     threads = []
     
     remote_log_files = []
@@ -63,7 +64,7 @@ def main():
             print('Starting thread for [{0}] on [{1}]'.format(remote_log_file, ip_address))
             thr = threading.Thread(name='Thread for [{0}] on [{1}]'.format(remote_log_file, ip_address),
                                    target=run_plink_with_tail_logs,
-                                   args=(opts.plink_path, ip_address, opts.user, opts.password, remote_log_file, opts.local_logs_dir, opts.pull_existing_logs))
+                                   args=(opts.plink_path, ip_address, opts.port, opts.user, opts.password, remote_log_file, opts.local_logs_dir, opts.pull_existing_logs))
             threads.append(thr)
             thr.start()
 
