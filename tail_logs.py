@@ -9,20 +9,21 @@ LOG_SETS = {
     'nova'    : ('/var/log/nova/nova-api.log',
                  '/var/log/nova/nova-network.log',
                  '/var/log/nova/nova-compute.log',
-    		     '/var/log/nova/nova-scheduler.log',
-    		     '/var/log/nova/nova-objectstore.log',
-    		     '/var/log/nova/nova-volume.log',
-    		     '/var/log/nova/nova-vsa.log',
-    		     '/var/log/nova/nova-manage.log',
-    		     '/var/log/nova/nova-install.log'),
+                 '/var/log/nova/nova-scheduler.log',
+                 '/var/log/nova/nova-objectstore.log',
+                 '/var/log/nova/nova-volume.log',
+                 '/var/log/nova/nova-vsa.log',
+                 '/var/log/nova/nova-manage.log',
+                 '/var/log/nova/nova-install.log'),
     'sys'      :('/var/log/syslog', '/var/log/kern.log', '/var/log/auth.log'),
     'vac'      :('/var/log/zadara/zadara_vac.log',),
     'vam'      :('/var/log/zadara/zadara_vam.log',),
-    'vc'       :('/var/log/zadara/zadara_vac.log', '/var/log/zadara/zadara_vam.log', '/var/log/zadara/zadara_cfg.py.log'),
+    'lsa'      :('/var/log/zadara/zadara_lsa.log',),
+    'vc'       :('/var/log/zadara/zadara_vac.log', '/var/log/zadara/zadara_vam.log', '/var/log/zadara/zadara_lsa.log', '/var/log/zadara/zadara_cfg.py.log'),
     'vccfg'    :('/var/log/zadara/zadara_vccfg.log',),
     'docker'   :('/var/log/upstart/docker.log',),
     'sn'       :('/var/log/zadara/zadara_snmonitor.log', '/var/log/zadara/zadara_sncfg.log')
-}	
+}
 
 def run_plink_with_tail_logs(plink_path, ip, port, username, password, remote_log_file, local_logs_dir, pull_existing_log):
     # Build the command to run
@@ -57,8 +58,8 @@ def main():
     
     remote_log_files = []
     for log_set_name in opts.logs:
-    	remote_log_files.extend(LOG_SETS[log_set_name])
-	
+        remote_log_files.extend(LOG_SETS[log_set_name])
+
     for ip_address in opts.ip:
         for remote_log_file in remote_log_files:
             print('Starting thread for [{0}] on [{1}]'.format(remote_log_file, ip_address))
