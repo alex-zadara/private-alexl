@@ -90,6 +90,7 @@ def prepare_vdbench_input_file_and_cmdline_args(fname, opts):
             validation_opt = '-' + opts.validation 
             f.write('# Data validation will be enabled via \'{0}\' command-line option\n'.format(validation_opt))
             f.write('# This means: {0}\n'.format(DATA_VALIDATION_TYPES[opts.validation]))
+            f.write('data_errors=1\n');
             cmdline_args.append(validation_opt)
         else:
             f.write('# Data validation is not performed\n')
@@ -105,7 +106,7 @@ def prepare_vdbench_input_file_and_cmdline_args(fname, opts):
             sd_idx = sd_idx + 1
 
         # WD - one definition for all block devices used
-        wd = 'wd=wd1,sd=(sd*),rdpct={0},seekpct={1},xfersize={2}'.format(opts.readpct, opts.seekpct, opts.xfersize)
+        wd = 'wd=wd1,sd=(sd*),rdpct={0},seekpct={1},rhpct=0,whpct=0,xfersize={2}'.format(opts.readpct, opts.seekpct, opts.xfersize)
         if opts.range is not None:
             wd = wd + ',range={0}'.format(opts.range)
         wd = wd + '\n'
