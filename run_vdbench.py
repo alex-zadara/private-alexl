@@ -27,7 +27,7 @@ def vdbench_platform_name():
 
 def gen_out_dir(opts):
     return os.path.join(opts.out_root_dir,
-        '{0}__O{1}_r{2}_s{3}_x{4}'.format(time.strftime("%Y-%m-%d__%H-%M-%S"),
+        '{}__O{}_r{}_s{}_x{}'.format(time.strftime("%Y-%m-%d__%H-%M-%S"),
             opts.outstanding, opts.readpct, opts.seekpct, opts.xfersize))
 
 RANGE_RE=re.compile(r'^\(\d+[mgt]\,\d+[mgt]\)$')
@@ -59,19 +59,26 @@ def validate_xfersize(opts):
     setattr(opts, 'align', None)
 
     if SINGLE_XFER_SIZE_RE.match(opts.xfersize) is not None:
-        print("SINGLE")
+        # print("SINGLE")
         return 0
 
     if DISTRI_XFER_SIZE_RE.match(opts.xfersize) is not None:
-        print("DISTRI")
+        # print("DISTRI")
         return 0
 
     m = RANDOM_XFER_SIZE_RE.match(opts.xfersize)
     if m is not None:
         opts.align = m.group(1)
-        print("RANDOM, align={0}".format(opts.align))
+        # print("RANDOM, align={}".format(opts.align))
         return 0
 
+    return 1
+
+DEDUPUNIT_RE=re.compile(r'^\d+k$')
+
+def validate_dedupunit(opts):
+    if DEDUPUNIT_RE.match(opts.dedupunit) is not None:
+        return 0
     return 1
 
 DATA_VALIDATION_TYPES = {
@@ -87,42 +94,49 @@ def prepare_vdbench_input_file_and_cmdline_args(fname, opts):
     with open(fname, 'w') as f:
         # Data validation
         if opts.validation is not None:
-            validation_opt = '-' + opts.validation 
-            f.write('# Data validation will be enabled via \'{0}\' command-line option\n'.format(validation_opt))
-            f.write('# This means: {0}\n'.format(DATA_VALIDATION_TYPES[opts.validation]))
-            f.write('data_errors=1\n');
+            validation_opt = '-' + opts.validation
+            f.write('# Data validation will be enabled via \'{}\' command-line option\n'.format(validation_opt))
+            f.write('# This means: {}\n'.format(DATA_VALIDATION_TYPES[opts.validation]))
+            f.write('data_errors=1\n')
             cmdline_args.append(validation_opt)
         else:
             f.write('# Data validation is not performed\n')
 
+        # Compression and dedup
+        if opts.compratio > 1:
+            f.write('compratio={}\n'.format(opts.compratio))
+        if opts.dedupratio > 1:
+            f.write('dedupratio={}\n'.format(opts.dedupratio))
+            f.write('dedupunit={}\n'.format(opts.dedupunit))
+
         # SD - one for each block device
         sd_idx = 0
         for blkdev in opts.blkdevs:
-            sd = 'sd=sd{0},lun={1},threads={2},hitarea=0,openflags=directio'.format(sd_idx, blkdev, opts.outstanding)
+            sd = 'sd=sd{},lun={},threads={},hitarea=0,openflags=directio'.format(sd_idx, blkdev, opts.outstanding)
             if opts.align is not None:  # relevant only when random transfer size is requested
-                sd = sd + ',align={0}'.format(opts.align)
+                sd = sd + ',align={}'.format(opts.align)
             sd = sd + '\n'
             f.write(sd)
             sd_idx = sd_idx + 1
 
         # WD - one definition for all block devices used
-        wd = 'wd=wd1,sd=(sd*),rdpct={0},seekpct={1},rhpct=0,whpct=0,xfersize={2}'.format(opts.readpct, opts.seekpct, opts.xfersize)
+        wd = 'wd=wd1,sd=(sd*),rdpct={},seekpct={},rhpct=0,whpct=0,xfersize={}'.format(opts.readpct, opts.seekpct, opts.xfersize)
         if opts.range is not None:
-            wd = wd + ',range={0}'.format(opts.range)
+            wd = wd + ',range={}'.format(opts.range)
         wd = wd + '\n'
         f.write(wd)
 
         # RD
-        rd = 'rd=run_vdbench,wd=(wd1),iorate={0},elapsed={1},interval={2}'.format(opts.iorate, opts.elapsed, opts.interval)
+        rd = 'rd=run_vdbench,wd=(wd1),iorate={},elapsed={},interval={}'.format(opts.iorate, opts.elapsed, opts.interval)
         if opts.maxdata is not None:
-            rd = rd + ',maxdata={0}'.format(opts.maxdata)
+            rd = rd + ',maxdata={}'.format(opts.maxdata)
         rd = rd + '\n'
         f.write(rd)
         f.flush()
 
     return cmdline_args
 
-def main():
+if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Run basic vdbench test on a block device')
     parser.add_argument('blkdevs', nargs='+', help='block devices to run the test on')
     parser.add_argument('-O', '--outstanding', type=int, default=32, help='number of outstanding IOs, default is 32')
@@ -130,6 +144,9 @@ def main():
     parser.add_argument('-s', '--seekpct', type=int, default=100, help='seek percentage (random vs sequential), default is 100')
     parser.add_argument('-x', '--xfersize', type=str, default="4k", help='transfer size like "16k" or "(min,max,align)", default is 4k')
     parser.add_argument('-R', '--range', type=str, default=None, help='Range of the block device to cover by the test, like "(1g,2g)", default is to cover the whole block device')
+    parser.add_argument('-c', '--compratio', type=int, default=1, help='Expected compression ratio, default is 1 (i.e. no compression)')
+    parser.add_argument('-d', '--dedupratio', type=int, default=1, help='Expected dedupe ratio, default is 1 (i.e. no dedupe)')
+    parser.add_argument('-u', '--dedupunit', type=str, default="8k", help='dedupe unit size like "16k", default is 8k; relevant only when dedupratio is > 1')
     parser.add_argument('-i', '--iorate', default='max', help='IOPS for the test, can be \'max\' or a number, default is \'max\'')
     parser.add_argument('-e', '--elapsed', type=int, default=30, help='duration of the test in seconds, default is 30')
     parser.add_argument('-m', '--maxdata', type=str, default=None, help='Stop after this amount of data, like "50g", by default not enabled')
@@ -138,6 +155,7 @@ def main():
     parser.add_argument('-o', '--out_root_dir', default=os.getcwd(), help='directory in which auto-generated output directories will be created')
     parser.add_argument('--exact_out_dir', help='exact directory, in which test output will be (overrides --out_root_dir)')
     parser.add_argument('-v', '--vdbench', default=os.path.join(os.getcwd(), vdbench_platform_name()), help='path to the vdbench run-script')
+    parser.add_argument('-N', '--dry-run', action='store_true', help='Do not actually run vdbench')
     opts = parser.parse_args()
 
     # check params
@@ -148,9 +166,17 @@ def main():
     if opts.seekpct < 0 or opts.seekpct > 100:
         usage_and_exit('--seekpct must be between 0 and 100 (including)', parser)
     if validate_xfersize(opts) != 0:
-        usage_and_exit('--xfersize value {0} is invalid'.format(opts.xfersize), parser)
+        usage_and_exit('--xfersize value {} is invalid'.format(opts.xfersize), parser)
     if validate_simple_optional_attr(opts, 'range', RANGE_RE) != 0:
-        usage_and_exit('--range value {0} is invalid'.format(opts.range), parser)
+        usage_and_exit('--range value {} is invalid'.format(opts.range), parser)
+    if opts.compratio < 1:
+        usage_and_exit('--compratio value {} is invalid, must be >= 1'.format(opts.compratio), parser)
+    if opts.dedupratio < 1:
+        usage_and_exit('--dedupratio value {} is invalid, must be >= 1'.format(opts.dedupratio), parser)
+    if opts.dedupratio > 1:
+        # dedupunit is relevant only when dedupratio is enabled
+        if validate_dedupunit(opts) != 0:
+            usage_and_exit('--dedupunit value {} is invalid'.format(opts.dedupunit), parser)
     if opts.iorate != 'max':
         try:
             val = int(opts.iorate)
@@ -161,7 +187,7 @@ def main():
     if opts.elapsed <= 0:
         usage_and_exit('--elapsed must be positive', parser)
     if validate_simple_optional_attr(opts, 'maxdata', MAXDATA_RE) != 0:
-        usage_and_exit('--maxdata value {0} is invalid'.format(opts.maxdata), parser)
+        usage_and_exit('--maxdata value {} is invalid'.format(opts.maxdata), parser)
     if opts.interval <= 0:
         usage_and_exit('--interval must be positive', parser)
 
@@ -181,7 +207,7 @@ def main():
     cmdline_args.extend(('-f', fname, '-o', out_dir))
 
     print()
-    print('== Going to run vdbench with the following input ({0}): =='.format(fname))
+    print('== Going to run vdbench with the following input ({}): =='.format(fname))
     with open(fname, 'r') as f:
         for line in f:
             print(line, end='')
@@ -189,15 +215,16 @@ def main():
     print('== vdbench command-line: ==')
     print(' '.join(cmdline_args))
     print()
-    print('== Output will be in: {0}'.format(out_dir))
+    print('== Output will be in: {}'.format(out_dir))
     print()
 
-    # run vdbench
-    subp_obj = subprocess.Popen(cmdline_args)
-    subp_obj.communicate()
+    if not opts.dry_run:
+        # run vdbench
+        subp_obj = subprocess.Popen(cmdline_args)
+        subp_obj.communicate()
+    else:
+        print('Dry run: not running vdbench')
 
     # move the input file to the output directory
     os.rename(fname, os.path.join(out_dir, os.path.basename(fname)))
-
-main()
 
