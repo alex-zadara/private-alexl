@@ -92,12 +92,14 @@ def prepare_vdbench_input_file_and_cmdline_args(fname, opts):
     cmdline_args = []
 
     with open(fname, 'w') as f:
+        # We always want this, as we want to fail on any IO or data validation error
+        f.write('data_errors=1\n')
+
         # Data validation
         if opts.validation is not None:
             validation_opt = '-' + opts.validation
             f.write('# Data validation will be enabled via \'{}\' command-line option\n'.format(validation_opt))
             f.write('# This means: {}\n'.format(DATA_VALIDATION_TYPES[opts.validation]))
-            f.write('data_errors=1\n')
             cmdline_args.append(validation_opt)
         else:
             f.write('# Data validation is not performed\n')
