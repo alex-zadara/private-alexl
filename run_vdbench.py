@@ -224,9 +224,10 @@ if __name__ == '__main__':
         # run vdbench
         subp_obj = subprocess.Popen(cmdline_args)
         subp_obj.communicate()
+        # move the input file to the output directory
+        os.rename(fname, os.path.join(out_dir, os.path.basename(fname)))
     else:
         print('Dry run: not running vdbench')
-
-    # move the input file to the output directory
-    os.rename(fname, os.path.join(out_dir, os.path.basename(fname)))
+        # remove the input file
+        os.unlink(fname)
 
