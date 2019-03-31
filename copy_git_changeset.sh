@@ -113,6 +113,13 @@ fi
 
 
 # Create the destination directory
+WORKING_DIR_CANON=`readlink -f $WORKING_TREE_PATH`
+DEST_DIR="$DEST_DIR/`date +%Y-%m-%d__%H-%M-%S`_`basename $WORKING_DIR_CANON`"
+if [ -e "$DEST_DIR" ]
+then
+    echo "Directory: $DEST_DIR already exists"
+    exit 1
+fi
 mkdir -p $DEST_DIR
 
 # Information about which branch we are in and what is the top commit
