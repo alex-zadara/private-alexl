@@ -20,6 +20,7 @@ LOG_SETS = {
     'vam'      :('/var/log/zadara/zadara_vam.log',),
     'lsa'      :('/var/log/zadara/zadara_lsa.log',),
     'vc'       :('/var/log/zadara/zadara_vac.log', '/var/log/zadara/zadara_vam.log', '/var/log/zadara/zadara_lsa.log', '/var/log/zadara/zadara_cfg.py.log'),
+    'zios'     :('/var/log/zadara/zadara_osm.log','/var/log/zadara/zadara_vac.log','/var/log/zadara/zadara_zoc.log','/var/log/zadara/zadara_zom_master.log','/var/log/zadara/zadara_zom_slave.log'),
     'vccfg'    :('/var/log/zadara/zadara_vccfg.log',),
     'docker'   :('/var/log/upstart/docker.log',),
     'sn'       :('/var/log/zadara/zadara_snmonitor.log', '/var/log/zadara/zadara_sncfg.log')

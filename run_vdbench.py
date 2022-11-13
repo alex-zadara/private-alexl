@@ -201,7 +201,7 @@ if __name__ == '__main__':
         out_dir = gen_out_dir(opts)
 
     # prepare vdbench input file
-    os_fd, fname = tempfile.mkstemp(prefix='run_vdbench_INPUT_', dir=os.getcwd(), text=True)
+    os_fd, fname = tempfile.mkstemp(prefix='__vdbench_input_', dir=os.getcwd(), text=True)
     os.close(os_fd)
     addtnl_cmdline_args = prepare_vdbench_input_file_and_cmdline_args(fname, opts)
     cmdline_args = [opts.vdbench]

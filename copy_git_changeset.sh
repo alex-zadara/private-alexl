@@ -23,8 +23,10 @@ create_changeset_file()
 	
 	# Get the changes from git
 	local changed_files=
+	local changed_files2=
 	if [ "$staged_only" = "0" ]; then
 		changed_files=`git status | egrep 'modified:|new file:' | cut -d ':' -f 2`
+		changed_files2=`git status | egrep "renamed:" | egrep -o "\-> .+" | cut -d' ' -f2`
 	else
 		# Note that the below command has TAB as delimiter; this is also the default delimiter of "cut"
 		changed_files=`git diff --cached --name-status  | cut  -f2`
@@ -36,7 +38,12 @@ create_changeset_file()
 		# Add the filename to the changeset
 		echo $filename >> $change_set_filename
 	done
-	
+	for filename in $changed_files2
+	do
+		# Add the filename to the changeset
+		echo $filename >> $change_set_filename
+	done
+
 	# Return the filename
 	echo $change_set_filename
 }
