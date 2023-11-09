@@ -10,21 +10,25 @@ import re
 import csv
 import subprocess
 
+
 def end(exit_rc):
     sys.exit(exit_rc)
+
 
 def error(msg):
     print('ERROR: {}'.format(msg), file=sys.stderr)
     end(1)
 
+
 def run_cmd(cmd):
     p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    while p.poll() == None:
+    while p.poll() is None:
         time.sleep(0.1)
 
     stdout, stderr = p.communicate()
 
     return p.returncode, stdout.splitlines(), stderr.splitlines()
+
 
 def run_cmd_success(cmd):
     rc, stdout, stderr = run_cmd(cmd)
@@ -49,13 +53,14 @@ BW_RE = re.compile(r'^\s+bw \(\s*(K|M)iB/s\): .+, avg=([0-9\.]+),')
 
 IOPS_RE = re.compile(r'^\s+iops\s*: .+, avg=([0-9\.]+),')
 
+
 def parse_fio_output_file(fpath):
     if not os.path.isfile(fpath):
         error('{} does not exist'.format(fpath))
     print('Parsing {}'.format(fpath))
 
-    res = {'read'  : {'lat_ms' : None, 'bw_kbsec' : None, 'iops' : None},
-           'write' : {'lat_ms' : None, 'bw_kbsec' : None, 'iops' : None}
+    res = {'read': {'lat_ms': None, 'bw_kbsec': None, 'iops': None},
+           'write': {'lat_ms': None, 'bw_kbsec': None, 'iops': None}
           }
     section = None
 
@@ -81,7 +86,7 @@ def parse_fio_output_file(fpath):
                 if m.group(1) == 'usec':
                     lat = lat / 1000
                 elif m.group(1) == 'nsec':
-                    lat = lat / (1000*1000)
+                    lat = lat / (1000 * 1000)
                 lat = '{:.3f}'.format(lat)
                 res[section]['lat_ms'] = lat
 
@@ -125,6 +130,7 @@ def parse_fio_output_file(fpath):
 
 ############################################################################
 
+
 def open_csv_file(fpath, is_read):
     head, tail = os.path.split(fpath)
     fpath = os.path.join(head, '{}_{}'.format('rd' if is_read else 'wr', tail))
@@ -133,6 +139,7 @@ def open_csv_file(fpath, is_read):
     csv_writer = csv.writer(csvf)
     csv_writer.writerow(('IO size (bytes)', 'queue depth', 'latency (ms)', 'bw (kb/sec)', 'IOPs'))
     return csvf, csv_writer
+
 
 def dir_to_csv(opts):
     read_csvf = None
@@ -160,7 +167,9 @@ def dir_to_csv(opts):
 
 ############################################################################
 
+
 MIXED_RWS = ('rw', 'readwrite', 'randrw')
+
 
 def run_fio_loop(opts):
     # create the output directory for the run
@@ -204,6 +213,7 @@ def run_fio_loop(opts):
 
 ############################################################################
 
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Performance matrix with fio')
     subparsers = parser.add_subparsers()
@@ -214,7 +224,7 @@ if __name__ == '__main__':
     sub_parser.set_defaults(func=dir_to_csv)
 
     sub_parser = subparsers.add_parser('run_fio_loop', help='Run fio with different sizes/queue depth and parse the results')
-    sub_parser.add_argument('--io-pattern', choices=('read','write','randread','randwrite','rw','readwrite','randrw'), default='write')
+    sub_parser.add_argument('--io-pattern', choices=('read', 'write', 'randread', 'randwrite', 'rw', 'readwrite', 'randrw'), default='write')
     sub_parser.add_argument('--readpct', type=int, default=50)
     sub_parser.add_argument('--runtime', default=72)
     sub_parser.add_argument('--bdev', required=True)
@@ -226,4 +236,3 @@ if __name__ == '__main__':
     opts.func(opts)
 
     end(0)
-
