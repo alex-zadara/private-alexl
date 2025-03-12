@@ -18,7 +18,7 @@ HEADER = re.compile(r'^(\d+/\d+/\d+\s+\d+:\d+:\d+)')
 
 # Device            r/s     w/s     rkB/s     wkB/s   rrqm/s   wrqm/s  %rrqm  %wrqm r_await w_await aqu-sz rareq-sz wareq-sz  svctm  %util
 # vda              0.00    2.00      0.00      8.00     0.00     0.00   0.00   0.00    0.00    0.50   0.00     0.00     4.00   0.00   0.00
-IOSTAT = re.compile(r'([\w-]+)\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)\s+[\d.]+\s+[\d.]+\s+[\d.]+\s+[\d.]+\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)')
+IOSTAT = re.compile(r'([\w-]+)\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)\s+[\d.]+\s+[\d.]+\s+[\d.]+\s+[\d.]+\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)\s+[\d.]+\s+([\d.]+)')
 
 RD_PER_SEC = "rd_per_sec"
 RD_MB_SEC = "rd_mb_sec"
@@ -29,10 +29,13 @@ WR_MB_SEC = "wr_mb_sec"
 WR_LAT_MS = "wr_lat_ms"
 
 QU_SZ = 'qu_sz'
+RA_REQ_SZ = 'ra_req_sz'
+WA_REQ_SZ = 'wa_req_sz'
+UTIL = 'util'
 
 ALL_METRICS = (RD_PER_SEC, RD_MB_SEC, RD_LAT_MS,
                WR_PER_SEC, WR_MB_SEC, WR_LAT_MS,
-               QU_SZ)
+               QU_SZ, UTIL, RA_REQ_SZ, WA_REQ_SZ)
 
 HTML = 'html'
 JPEG = 'jpeg'
@@ -85,7 +88,9 @@ def parse_iostat(opts):
                 curr_sample[blkdev] = {RD_PER_SEC: float(m.group(2)), WR_PER_SEC: float(m.group(3)),
                                        RD_MB_SEC: float(m.group(4)) / 1024, WR_MB_SEC: float(m.group(5)) / 1024,
                                        RD_LAT_MS: float(m.group(6)), WR_LAT_MS: float(m.group(7)),
-                                       QU_SZ: float(m.group(8))}
+                                       QU_SZ: float(m.group(8)),
+                                       RA_REQ_SZ: float(m.group(9)), WA_REQ_SZ: float(m.group(10)),
+                                       UTIL: float(m.group(11))}
 
     if curr_header is not None:
         samples.append((curr_header, curr_sample))
@@ -117,6 +122,7 @@ if __name__ == '__main__':
     parser.add_argument('--max-samples', type=int, default=0)
     parser.add_argument('--samples-from-end', action='store_true')
     parser.add_argument('--dont-cut-first-line', action='store_true')
+    parser.add_argument('--real-timestamp', action='store_true')
     parser.add_argument('--fig-title')
     parser.add_argument('-f', '--output-format', choices=(HTML, JPEG), default=HTML)
     parser.add_argument('blkdevs', nargs='+')
@@ -149,8 +155,10 @@ if __name__ == '__main__':
 
         sample_idx = 0
         for sample in samples:
-            # instead of real timestamp, append sample index; with timestamps the graph looks messy
-            timestamps.append(sample_idx)
+            if opts.real_timestamp:
+                timestamps.append(sample[0].split()[-1])
+            else:
+                timestamps.append(sample_idx)
             sample_idx += 1
 
             for blkdev in opts.blkdevs:

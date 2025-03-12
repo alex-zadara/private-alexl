@@ -32,7 +32,7 @@ def run_plink_with_tail_logs(plink_path, ip, port, username, password, remote_lo
     if pull_existing_log:
         cmd = 'echo ------ Existing log: `date`; cat ' + remote_log_file + '; '
     cmd = cmd + 'date; echo ------ Tailing: `date`; tail -F ' + remote_log_file; 
-    args = [plink_path, '-P', str(port), '-ssh', '-pw', password, username + '@' + ip, cmd]
+    args = [plink_path, '-auto-store-sshkey', '-P', str(port), '-ssh', '-pw', password, username + '@' + ip, cmd]
 
     local_log_file = os.path.join(local_logs_dir, ip + '.' + os.path.basename(remote_log_file))
     local_log_file_obj = open(local_log_file, 'a') # TODO ask the user whether to truncate or append
@@ -50,7 +50,7 @@ def main():
     parser.add_argument('-p', '--password', default='root', help='The password to use when connecting, default is "root"')
     log_choices = tuple(LOG_SETS.keys())
     parser.add_argument('-l', '--logs', action='append', choices=log_choices, required=True, help='The set of log files to monitor')
-    parser.add_argument('--plink_path', default='C:\PortablePrograms\plink\plink.exe', help='The path to the plink program, default is "C:\Programs\plink\plink.exe"')
+    parser.add_argument('--plink_path', default='C:\PortablePrograms\kitty\klink.exe', help='The path to the plink program, default is "C:\Programs\plink\plink.exe"')
     parser.add_argument('--local_logs_dir', default='C:\Work\Logs', help='The local directory to store the log files, default is "C:\Work\Logs"')
     parser.add_argument('-e', '--pull_existing_logs', action='store_true', default=False, help='Whether to pull existing content from the log file, before "tail -F", default is False');
     opts = parser.parse_args()

@@ -6,6 +6,7 @@ import argparse
 import re
 import sys
 import os
+import csv
 import plotly.express as px
 
 
@@ -34,6 +35,7 @@ ALL_METRICS = (CPU_PER_CMD, MEM_FREE, MEM_USED, MEM_BUFF_CACHE)
 
 HTML = 'html'
 JPEG = 'jpeg'
+CSV = 'csv'
 
 
 def validate_opts(opts):
@@ -102,29 +104,7 @@ def parse_top(opts):
     return samples
 
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='')
-    parser.add_argument('--infile', required=True)
-    parser.add_argument('-o', '--outfile-prefix', required=False)
-    parser.add_argument('--metrics', default=MEM_USED)
-    parser.add_argument('--commands', nargs='+')
-    parser.add_argument('--max_samples', type=int, default=0)
-    parser.add_argument('--fig-title')
-    parser.add_argument('-f', '--output-format', choices=(HTML, JPEG), default=HTML)
-
-    opts = parser.parse_args()
-    validate_opts(opts)
-
-    samples = parse_top(opts)
-
-    in_proper_name = os.path.realpath(opts.infile)
-    in_dir_name = os.path.dirname(in_proper_name)
-    in_base_name = os.path.basename(in_proper_name)
-    if opts.outfile_prefix is not None:
-        out_name = opts.outfile_prefix
-    else:
-        out_name = in_base_name
-
+def do_plotly(opts, in_dir_name, out_name, samples):
     # MEM-metrics #########################################
     # Prepare an input for plotly: produce a column for the X-axis (timestamp) and a column for each MEM-metric
     timestamps = []
@@ -161,3 +141,67 @@ if __name__ == '__main__':
     # CPU-metrics #########################################
     if CPU_PER_CMD in opts.metrics:
         bug('CPU metrics plotting is not implemented yet')
+
+
+def do_csv(opts, in_dir_name, out_name, samples):
+    outfile = os.path.join(in_dir_name, '{}.{}'.format(out_name, 'csv'))
+    with open(outfile, 'w') as outf:
+        csv_writer = csv.writer(outf)
+
+        header_row = ['timestamp']
+        for metric in opts.metrics:
+            if metric == CPU_PER_CMD:
+                for cmd in opts.commands:
+                    header_row.append(cmd)
+            elif metric in MEM_METRICS:
+                header_row.append('{} (mb)'.format(metric))
+            else:
+                bug('Unknown metric {}'.format(metric))
+        csv_writer.writerow(header_row)
+
+        for sample in samples:
+            row = [sample['timestamp']]
+            for metric in opts.metrics:
+                if metric == CPU_PER_CMD:
+                    for cmd in opts.commands:
+                        val = sample['cpu_per_cmd'].get(cmd)
+                        if val is not None:
+                            row.append('{:.2f}'.format(val))
+                        else:
+                            row.append('-')
+                elif metric in MEM_METRICS:
+                    row.append('{:.2f}'.format(sample[metric] / 1024))
+                else:
+                    bug('Unknown metric {}'.format(metric))
+            csv_writer.writerow(row)
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='')
+    parser.add_argument('--infile', required=True)
+    parser.add_argument('-o', '--outfile-prefix', required=False)
+    parser.add_argument('--metrics', default=MEM_USED)
+    parser.add_argument('--commands', nargs='+')
+    parser.add_argument('--max-samples', type=int, default=0)
+    parser.add_argument('--fig-title')
+    parser.add_argument('-f', '--output-format', choices=(HTML, JPEG, CSV), default=HTML)
+
+    opts = parser.parse_args()
+    validate_opts(opts)
+
+    samples = parse_top(opts)
+
+    in_proper_name = os.path.realpath(opts.infile)
+    in_dir_name = os.path.dirname(in_proper_name)
+    in_base_name = os.path.basename(in_proper_name)
+    if opts.outfile_prefix is not None:
+        out_name = opts.outfile_prefix
+    else:
+        out_name = in_base_name
+
+    if opts.output_format in (HTML, JPEG):
+        do_plotly(opts, in_dir_name, out_name, samples)
+    elif opts.output_format == CSV:
+        do_csv(opts, in_dir_name, out_name, samples)
+    else:
+        bug('Invalid output format {}'.format(opts.output_format))
